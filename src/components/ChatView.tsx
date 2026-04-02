@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, User, Bot, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { createChatSession } from '../lib/gemini';
+import { sendChatMessage } from '../lib/gemini';
 
 interface Message {
   role: 'user' | 'model';
@@ -12,12 +12,7 @@ export const ChatView: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const chatRef = useRef<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    chatRef.current = createChatSession();
-  }, []);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -35,8 +30,8 @@ export const ChatView: React.FC = () => {
     setLoading(true);
 
     try {
-      const result = await chatRef.current.sendMessage({ message: userMsg });
-      setMessages(prev => [...prev, { role: 'model', text: result.text || '' }]);
+      const responseText = await sendChatMessage(userMsg);
+      setMessages(prev => [...prev, { role: 'model', text: responseText }]);
     } catch (err) {
       console.error(err);
       setMessages(prev => [...prev, { role: 'model', text: 'Üzgünüm, bir hata oluştu. Lütfen tekrar deneyin.' }]);
