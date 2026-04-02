@@ -1,20 +1,24 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
-  
-  // Vercel'deki Environment Variables ismine dikkat!
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+
+  const { brand, code } = req.body;
+  const apiKey = process.env.GEMINI_API_KEY;
 
   try {
-    const { brand, code } = req.body;
-    const prompt = `Sen hatakodum.com uzmanısın. ${brand} marka cihazdaki ${code} hata kodunu analiz et. Kısa ve net çözüm adımları ile tahmini maliyeti Türkçe yaz.`;
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: `${brand} marka cihazda ${code} hata kodu nedir? Çözümünü ve maliyetini Türkçe anlat. Yanıtı sade bir metin olarak ver.` }] }]
+      })
+    });
+
+    const data = await response.json();
     
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    res.status(200).json({ result: response.text() });
+    // Google'dan gelen cevabı temizleyip frontend'e gönderiyoruz
+    const aiResponse = data.candidates[0].content.parts[0].text;
+    res.status(200).json({ result: aiResponse });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Sistemsel bir hata oluştu: " + error.message });
   }
 }
