@@ -11,8 +11,11 @@ app.post("/api/diagnose", async (req, res) => {
   const { brand, errorCode } = req.body;
   const apiKey = process.env.GEMINI_API_KEY;
 
+  console.log(`Analiz isteği geldi: ${brand} - ${errorCode}`);
+
   if (!apiKey) {
-    return res.status(500).json({ error: "API anahtarı sunucuda yapılandırılmamış." });
+    console.error("HATA: GEMINI_API_KEY sunucuda bulunamadı!");
+    return res.status(500).json({ error: "API anahtarı sunucuda yapılandırılmamış. Lütfen Vercel panelinden Environment Variables kısmını kontrol edin." });
   }
 
   try {
@@ -41,10 +44,14 @@ app.post("/api/diagnose", async (req, res) => {
       },
     });
 
+    console.log("Gemini API yanıtı başarıyla alındı.");
     res.json(JSON.parse(response.text || "{}"));
-  } catch (error) {
-    console.error("Gemini API Error:", error);
-    res.status(500).json({ error: "Analiz sırasında bir hata oluştu." });
+  } catch (error: any) {
+    console.error("Gemini API Hatası:", error.message || error);
+    res.status(500).json({ 
+      error: "Analiz sırasında bir hata oluştu.",
+      details: error.message || "Bilinmeyen hata"
+    });
   }
 });
 
